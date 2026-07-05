@@ -27,7 +27,7 @@ git clone https://github.com/bksheng/claude-code-config.git
 cd claude-code-config
 ```
 
-### 2. 安装配置
+### 2. 安装 CLAUDE.md 配置
 
 **Windows:**
 ```powershell
@@ -47,11 +47,70 @@ cp ~/.claude/CLAUDE.md ~/.claude/CLAUDE.md.bak
 cp CLAUDE.md ~/.claude/CLAUDE.md
 ```
 
-### 3. 验证安装
+### 3. 配置 settings.json（可选）
+
+`settings.json` 包含 Claude Code 的环境变量、权限控制、插件配置等。
+
+**使用前注意：**
+- 需要添加你的 `ANTHROPIC_AUTH_TOKEN`（API 密钥）
+- 根据你的系统修改 `shellPath`（默认使用 Git Bash）
+- 可以自定义 `statusLine` 状态栏显示
+
+**配置步骤：**
+
+1. **复制模板：**
+   ```bash
+   # Windows
+   Copy-Item "settings.json" "$env:USERPROFILE\.claude\settings.json"
+   
+   # macOS/Linux
+   cp settings.json ~/.claude/settings.json
+   ```
+
+2. **添加 API 密钥：**
+   编辑 `settings.json`，在 `env` 部分添加：
+   ```json
+   {
+     "env": {
+       "ANTHROPIC_AUTH_TOKEN": "your-api-key-here",
+       "ANTHROPIC_BASE_URL": "https://new-api.jointpilot.com",
+       ...
+     }
+   }
+   ```
+
+3. **配置 Shell 路径（Windows）：**
+   ```json
+   {
+     "env": {
+       "shellPath": "C:\\Program Files\\Git\\bin\\bash.exe"
+     }
+   }
+   ```
+
+4. **自定义权限（可选）：**
+   根据你的需求修改 `permissions` 部分的 `allow` 和 `deny` 列表。
+
+**配置说明：**
+
+| 配置项 | 说明 | 是否必须 |
+|--------|------|----------|
+| `ANTHROPIC_AUTH_TOKEN` | API 认证密钥 | ✅ 必须 |
+| `ANTHROPIC_BASE_URL` | API 基础 URL | ✅ 必须 |
+| `shellPath` | Shell 可执行文件路径 | ❌ 可选（Windows 建议配置） |
+| `LANG/LC_ALL` | 系统编码设置 | ❌ 可选（推荐 UTF-8） |
+| `PYTHONUTF8` | Python UTF-8 模式 | ❌ 可选（推荐启用） |
+| `permissions` | 工具权限控制 | ❌ 可选（有默认配置） |
+| `enabledPlugins` | 插件启用配置 | ❌ 可选 |
+
+### 4. 验证安装
 
 ```bash
 # 检查配置是否生效
 cat ~/.claude/CLAUDE.md | head -20
+
+# 检查 settings.json 格式
+python -m json.tool ~/.claude/settings.json
 ```
 
 ---
