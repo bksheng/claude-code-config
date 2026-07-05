@@ -92,19 +92,19 @@ cp CLAUDE.md ~/.claude/CLAUDE.md
 
 | 配置项 | 说明 | 示例值 |
 |--------|------|--------|
-|  | DeepSeek API 基础 URL |  |
-|  | DeepSeek API 密钥 |  |
-|  | 最强模型（对应 Claude Opus） |  |
-|  | 平衡模型（对应 Claude Sonnet） |  |
-|  | 快速模型（对应 Claude Haiku） |  |
+| `ANTHROPIC_BASE_URL` | DeepSeek API 基础 URL | `https://api.deepseek.com/anthropic` |
+| `ANTHROPIC_API_KEY` | DeepSeek API 密钥 | `sk-...` |
+| `ANTHROPIC_DEFAULT_OPUS_MODEL` | 最强模型（对应 Claude Opus） | `deepseek-v4-pro[1m]` |
+| `ANTHROPIC_DEFAULT_SONNET_MODEL` | 平衡模型（对应 Claude Sonnet） | `deepseek-v4-flash` |
+| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | 快速模型（对应 Claude Haiku） | `deepseek-v4-flash` |
 
 **模型映射关系：**
 
 | Claude 模型 | DeepSeek 模型 | 说明 |
 |------------|--------------|------|
-| Claude Opus |  | 最强性能，适合复杂任务 |
-| Claude Sonnet |  | 平衡性能与速度 |
-| Claude Haiku |  | 快速响应，适合简单任务 |
+| Claude Opus | `deepseek-v4-pro[1m]` | 最强性能，适合复杂任务 |
+| Claude Sonnet | `deepseek-v4-flash` | 平衡性能与速度 |
+| Claude Haiku | `deepseek-v4-flash` | 快速响应，适合简单任务 |
 
 **配置说明：**
 
