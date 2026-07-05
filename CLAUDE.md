@@ -342,6 +342,37 @@ EOF
 | 单行简单命令 | `python -c '...'` | `python -c "..."` |
 | 文件内容处理 | 先写入临时文件再执行 | 直接在命令行写多行 |
 
+
+#### 案例 4：Read 工具中断，改用 Python 读取文件
+
+**问题**：Read 工具读取包含中文的文件时中断
+```
+● Read(C:\projectile.py · lines 170-189)
+  ⎿  [Tool use interrupted]
+```
+
+**解决方案**：
+```bash
+# 使用 Python 读取（推荐）
+python -c "with open('file.py', 'r', encoding='utf-8') as f: print(f.read())"
+
+# 或读取特定行范围
+python -c "with open('file.py', 'r', encoding='utf-8') as f: lines = f.readlines(); print(''.join(lines[169:189]))"
+
+# 使用 Here Document 处理多行
+python << 'EOF'
+with open('file.py', 'r', encoding='utf-8') as f:
+    content = f.read()
+    print(content[:500])
+EOF
+```
+
+**预防措施**：
+1. 遇到 Read 中断，立即改用 Python
+2. 使用 `python << 'EOF'` 处理多行代码
+3. 验证输出内容后再进行后续操作
+4. 读取特定行范围时使用 `lines[start:end]`
+
 ## Recovery（回滚操作）
 
 - **彻底重置**: 执行 `cp <file>.orig <file>`，将文件还原至 AI 修改前的最初状态。
