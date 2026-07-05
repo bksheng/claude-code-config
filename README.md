@@ -52,7 +52,7 @@ cp CLAUDE.md ~/.claude/CLAUDE.md
 `settings.json` 包含 Claude Code 的环境变量、权限控制、插件配置等。
 
 **使用前注意：**
-- 需要添加你的 `ANTHROPIC_AUTH_TOKEN`（API 密钥）
+- 需要添加你的 `ANTHROPIC_API_KEY`（DeepSeek API 密钥）
 - 根据你的系统修改 `shellPath`（默认使用 Git Bash）
 - 可以自定义 `statusLine` 状态栏显示
 
@@ -67,16 +67,13 @@ cp CLAUDE.md ~/.claude/CLAUDE.md
    cp settings.json ~/.claude/settings.json
    ```
 
-2. **添加 API 密钥：**
-   编辑 `settings.json`，在 `env` 部分添加：
-   ```json
-   {
-     "env": {
-       "ANTHROPIC_AUTH_TOKEN": "your-api-key-here",
-       "ANTHROPIC_BASE_URL": "https://new-api.jointpilot.com",
-       ...
-     }
-   }
+2. **设置环境变量（DeepSeek API 密钥）：**
+   ```bash
+   # Windows (PowerShell)
+   $env:ANTHROPIC_API_KEY = "your-deepseek-api-key"
+   
+   # macOS/Linux
+   export ANTHROPIC_API_KEY="your-deepseek-api-key"
    ```
 
 3. **配置 Shell 路径（Windows）：**
@@ -91,17 +88,43 @@ cp CLAUDE.md ~/.claude/CLAUDE.md
 4. **自定义权限（可选）：**
    根据你的需求修改 `permissions` 部分的 `allow` 和 `deny` 列表。
 
+**DeepSeek API 配置说明：**
+
+| 配置项 | 说明 | 示例值 |
+|--------|------|--------|
+|  | DeepSeek API 基础 URL |  |
+|  | DeepSeek API 密钥 |  |
+|  | 最强模型（对应 Claude Opus） |  |
+|  | 平衡模型（对应 Claude Sonnet） |  |
+|  | 快速模型（对应 Claude Haiku） |  |
+
+**模型映射关系：**
+
+| Claude 模型 | DeepSeek 模型 | 说明 |
+|------------|--------------|------|
+| Claude Opus |  | 最强性能，适合复杂任务 |
+| Claude Sonnet |  | 平衡性能与速度 |
+| Claude Haiku |  | 快速响应，适合简单任务 |
+
 **配置说明：**
 
 | 配置项 | 说明 | 是否必须 |
 |--------|------|----------|
-| `ANTHROPIC_AUTH_TOKEN` | API 认证密钥 | ✅ 必须 |
-| `ANTHROPIC_BASE_URL` | API 基础 URL | ✅ 必须 |
+| `ANTHROPIC_API_KEY` | DeepSeek API 密钥 | ✅ 必须 |
+| `ANTHROPIC_BASE_URL` | API 基础 URL | ✅ 已配置（DeepSeek） |
 | `shellPath` | Shell 可执行文件路径 | ❌ 可选（Windows 建议配置） |
 | `LANG/LC_ALL` | 系统编码设置 | ❌ 可选（推荐 UTF-8） |
 | `PYTHONUTF8` | Python UTF-8 模式 | ❌ 可选（推荐启用） |
 | `permissions` | 工具权限控制 | ❌ 可选（有默认配置） |
 | `enabledPlugins` | 插件启用配置 | ❌ 可选 |
+
+**模型配置：**
+
+| 模型角色 | 配置项 | 默认值 |
+|----------|--------|--------|
+| Opus（最强模型） | `ANTHROPIC_DEFAULT_OPUS_MODEL` | `deepseek-v4-pro[1m]` |
+| Sonnet（平衡模型） | `ANTHROPIC_DEFAULT_SONNET_MODEL` | `deepseek-v4-flash` |
+| Haiku（快速模型） | `ANTHROPIC_DEFAULT_HAIKU_MODEL` | `deepseek-v4-flash` |
 
 ### 4. 验证安装
 
