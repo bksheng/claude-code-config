@@ -240,6 +240,108 @@ EOF
 - 项目文档：`docs/windows-utf8-encoding-issue.md`
 - 技术报告：`docs/encoding-issue-report.md`
 
+### 7. 工作目录管理
+
+**问题**：在子目录执行文件操作导致路径错误
+
+**示例**：
+```bash
+# 错误：在子目录执行
+python -c "with open('backend/src/api/v1/switch.py', 'r') as f: print(f.read())"
+# FileNotFoundError: [WinError 3] 系统找不到指定的路径
+
+# 正确：先确认当前目录
+python -c "import os; print(os.getcwd())"
+# 输出：.../msg-push-channel-management-v2/claude-code-windows-encoding-guide
+
+# 解决方案 1：使用相对路径回到上级
+cd ..
+python -c "with open('backend/src/api/v1/switch.py', 'r') as f: print(f.read())"
+
+# 解决方案 2：使用绝对路径
+python -c "with open('C:/project/backend/src/api/v1/switch.py', 'r') as f: print(f.read())"
+
+# 解决方案 3：在 Python 中处理路径
+python -c "
+import os
+os.chdir('..')
+with open('backend/src/api/v1/switch.py', 'r') as f:
+    print(f.read())
+"
+```
+
+**规则**：
+1. 执行文件操作前，先确认当前工作目录
+2. 使用 `python -c "import os; print(os.getcwd())"` 快速检查
+3. 优先使用绝对路径或确认相对路径正确
+4. 在子目录创建的文件（如 GitHub 仓库），注意路径层级
+
+**反思与教训**：
+
+**问题**：为什么会混入 switch.py 代码？
+
+**原因分析**：
+1. **Read 工具中断**：读取包含 UTF-8 中文的 `CLAUDE.md` 时，`Read` 工具中断失败
+2. **改用 Bash 工具**：使用 `python -c "..."` 读取文件，但使用了双引号包裹多行 Python 代码
+3. **Bash 解析错误**：双引号 `"` 会解析 `$`、`` ` ``、`"` 等特殊字符，导致 Python 代码执行异常
+4. **输出混乱**：Bash 输出被截断或混淆，误以为输出是 `CLAUDE.md` 的内容
+5. **写入错误**：将错误的输出（包含 `switch.py` 代码）写入了 `CLAUDE.md`
+
+**根本原因**：
+- **不是工具问题**：`Read` 工具中断是已知的 Windows 编码问题（有解决方案）
+- **是操作问题**：使用了不安全的命令格式（双引号包裹多行）
+- **缺少验证**：未验证输出内容是否正确，直接写入文件
+
+**正确做法**：
+```bash
+# ✅ 正确：使用 Here Document，Bash 不解析内容
+python << 'EOF'
+with open('file.txt', 'r', encoding='utf-8') as f:
+    content = f.read()
+    print(content[:500])
+EOF
+
+# ✅ 正确：验证输出后再写入
+# 1. 先读取并查看内容
+# 2. 确认是目标文件的内容
+# 3. 确认无误后再写入或修改
+```
+
+**预防措施**：
+| 场景 | 推荐方案 | 避免方案 |
+|------|----------|----------|
+| 读取中文文件 | `python << 'EOF'` | `Read` 工具（易中断） |
+| 多行 Python 代码 | `python << 'EOF'` | `python -c "..."` |
+| 单行简单命令 | `python -c '...'` | `python -c "..."` |
+| 文件内容处理 | 先写入临时文件再执行 | 直接在命令行写多行 |
+
+**核心原则**：
+1. **当 Read 工具中断时**：不要慌张，使用 `python << 'EOF'` 读取文件
+2. **验证输出内容**：确认是目标文件的内容后再写入
+3. **避免双引号包裹多行**：使用 Here Document 或单引号
+4. **应急处理流程**：Read 中断 → 使用 Here Document → 验证内容 → 确认后写入
+
+**重要教训 - 避免混入无关代码**：
+- **问题**：使用 `python -c "..."` 双引号包裹多行代码时，Bash 会解析特殊字符（如 `"""`、`$`、反引号），导致命令执行异常
+- **后果**：可能输出错误内容（如其他文件代码），并误写入目标文件
+- **解决方案**：
+  - ✅ 使用 Here Document：`python << 'EOF'`（Bash 不解析内容）
+  - ✅ 使用单引号：`python -c 'print("hello")'`（简单命令）
+  - ❌ 避免双引号包裹多行：`python -c "..."`（易解析错误）
+- **验证步骤**：
+  1. Read 工具中断时，改用 `python << 'EOF'` 读取
+  2. 检查输出内容是否正确（是否是目标文件）
+  3. 确认无误后再写入或修改文件
+  4. 写入后再次验证文件内容
+
+**预防措施**：
+| 场景 | 推荐方案 | 避免方案 |
+|------|----------|----------|
+| 读取中文文件 | `python << 'EOF'` | `Read` 工具（易中断） |
+| 多行 Python 代码 | `python << 'EOF'` | `python -c "..."` |
+| 单行简单命令 | `python -c '...'` | `python -c "..."` |
+| 文件内容处理 | 先写入临时文件再执行 | 直接在命令行写多行 |
+
 ## Recovery（回滚操作）
 
 - **彻底重置**: 执行 `cp <file>.orig <file>`，将文件还原至 AI 修改前的最初状态。
@@ -249,214 +351,6 @@ EOF
 - **全局回滚**: 识别本项目中所有的 `.orig` 文件，并批量执行覆盖还原。
 - **清理**: 仅在用户明确指令"清理备份"时，执行 `rm *.orig *.bak.*`。
 
-### 6. 工作目录管理
-
-**问题**：在子目录执行文件操作导致路径错误
-
-**示例**：
-"""
-自动切换记录路由
-"""
-from typing import Optional
-from uuid import UUID
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from db.session import get_db
-from schemas.channel import DataResponse
-from services.switch_service import SwitchService
-from core.exceptions import ValidationError
-
-router = APIRouter()
-
-
-@router.get("/logs")
-async def get_switch_logs(
-    group_name: Optional[str] = None,
-    switch_type: Optional[str] = Query(None, pattern=r'^(auto|manual)$'),
-    start_time: Optional[str] = None,
-    end_time: Optional[str] = None,
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db)
-):
-    """查询切换记录
-
-    查询渠道组的切换历史记录
-    """
-    # 验证时间范围
-    if start_time and end_time:
-        from datetime import datetime
-        try:
-            start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
-            end_dt = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
-            if (end_dt - start_dt).days > 90:
-                raise ValidationError("时间范围不能超过90天")
-        except ValueError:
-            raise ValidationError("时间格式错误，请使用ISO格式")
-
-    result = await SwitchService.get_switch_logs(
-        db=db,
-        group_name=group_name,
-        switch_type=switch_type,
-        start_time=start_time,
-        end_time=end_time,
-        page=page,
-        page_size=page_size
-    )
-
-    return DataResponse(data=result)
-
-
-@router.post("/groups/{group_id}/switch")
-async def manual_switch(
-    group_id: UUID,
-    to_channel_id: UUID,
-    reason: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
-):
-    """手动切换主渠道
-
-    管理员手动将主渠道切换为指定备用渠道
-    """
-    # TODO: 从 JWT 获取当前用户ID
-    operator_id = UUID("550e8400-e29b-41d4-a716-446655440000")
-
-    result = await SwitchService.manual_switch(
-        db=db,
-        group_id=group_id,
-        to_channel_id=to_channel_id,
-        operator_id=operator_id,
-        reason=reason
-    )
-
-    return DataResponse(
-        message="切换完成",
-        data=result
-    )
-
-
-@router.get("/groups/{group_id}/channels")
-async def get_group_channels(
-    group_id: UUID,
-    db: AsyncSession = Depends(get_db)
-):
-    """获取渠道组内的渠道列表
-
-    查询指定渠道组内的所有渠道及其角色
-    """
-    result = await SwitchService.get_group_channels(
-        db=db,
-        group_id=group_id
-    )
-
-    return DataResponse(data=result)
-
-C:\PyCode\Projects\ChinaSoft\VibeCoding\msg-push-channel-management-v2
-"""
-自动切换记录路由
-"""
-from typing import Optional
-from uuid import UUID
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from db.session import get_db
-from schemas.channel import DataResponse
-from services.switch_service import SwitchService
-from core.exceptions import ValidationError
-
-router = APIRouter()
-
-
-@router.get("/logs")
-async def get_switch_logs(
-    group_name: Optional[str] = None,
-    switch_type: Optional[str] = Query(None, pattern=r'^(auto|manual)$'),
-    start_time: Optional[str] = None,
-    end_time: Optional[str] = None,
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db)
-):
-    """查询切换记录
-
-    查询渠道组的切换历史记录
-    """
-    # 验证时间范围
-    if start_time and end_time:
-        from datetime import datetime
-        try:
-            start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
-            end_dt = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
-            if (end_dt - start_dt).days > 90:
-                raise ValidationError("时间范围不能超过90天")
-        except ValueError:
-            raise ValidationError("时间格式错误，请使用ISO格式")
-
-    result = await SwitchService.get_switch_logs(
-        db=db,
-        group_name=group_name,
-        switch_type=switch_type,
-        start_time=start_time,
-        end_time=end_time,
-        page=page,
-        page_size=page_size
-    )
-
-    return DataResponse(data=result)
-
-
-@router.post("/groups/{group_id}/switch")
-async def manual_switch(
-    group_id: UUID,
-    to_channel_id: UUID,
-    reason: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
-):
-    """手动切换主渠道
-
-    管理员手动将主渠道切换为指定备用渠道
-    """
-    # TODO: 从 JWT 获取当前用户ID
-    operator_id = UUID("550e8400-e29b-41d4-a716-446655440000")
-
-    result = await SwitchService.manual_switch(
-        db=db,
-        group_id=group_id,
-        to_channel_id=to_channel_id,
-        operator_id=operator_id,
-        reason=reason
-    )
-
-    return DataResponse(
-        message="切换完成",
-        data=result
-    )
-
-
-@router.get("/groups/{group_id}/channels")
-async def get_group_channels(
-    group_id: UUID,
-    db: AsyncSession = Depends(get_db)
-):
-    """获取渠道组内的渠道列表
-
-    查询指定渠道组内的所有渠道及其角色
-    """
-    result = await SwitchService.get_group_channels(
-        db=db,
-        group_id=group_id
-    )
-
-    return DataResponse(data=result)
-
-**规则**：
-1. 执行文件操作前，先确认当前工作目录
-2. 使用 C:\PyCode\Projects\ChinaSoft\VibeCoding\msg-push-channel-management-v2 快速检查
-3. 优先使用绝对路径或确认相对路径正确
-4. 在子目录创建的文件（如 GitHub 仓库），注意路径层级
-
 ## Tools & Scripting（工具与脚本规范）
 
 - **复杂数据分析**: 当需要从大量 JSONL 文件中提取元数据时，允许使用 `python -c` 编写单行脚本。
@@ -465,4 +359,3 @@ async def get_group_channels(
 - **防弹窗机制**: 在编写或执行 Shell 管道与 `python -c` 内联脚本时：
     1. 严禁在代码字符串内部使用 `#` 编写任何注释（防止触发系统的命令欺骗隐蔽参数拦截）。
     2. 尽量压缩为单行，或避免在换行后直接紧跟 `#` 字符，确保命令结构绝对纯净。
-
